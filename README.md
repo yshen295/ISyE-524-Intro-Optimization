@@ -2,7 +2,7 @@
 
 This project, developed for ISyE 524: Introduction to Optimization, tackles a common student dilemma: "Where should I eat lunch this week?" We formulate this problem as a Mixed-Integer Linear Program (MILP) to generate an optimal 5-day dining plan across six campus restaurants.
 
-Our paper submission (top course project for summer 2025) is found at [`main.pdf`](/main.pdf).
+Our paper submission (_**top course project**_ for summer 2025) is found at [`main.pdf`](/main.pdf).
 
 The primary source code can be found in the Jupyter Notebook: [`Final_pj_source_code.ipynb`](/Final_pj_source_code.ipynb).
 
