@@ -1,0 +1,191 @@
+\fontsize{10}{10}\selectfont
+\begin{verbatim}
+# No Nutrition Check
+# A Strategist’s Guide to Campus Dining
+
+using JuMP
+using Gurobi
+using Random
+import MathOptInterface # Check the status of our Model
+const MOI = MathOptInterface
+
+const DAYS, RESTAURANTS = 5, 6
+
+# ------------------------------ DATA ----------------------------------------
+#        r1  r2 r3  r4 r5 r6
+time = [13  13  26  14  26  19;  # D1
+        13  13  23  13  23  19;  # D2
+        6   13  34  27  23  34;  # D3  
+        13  15  30  21  25  27;  # D4
+        9   16  29  19  23  23]  # D5  
+
+price = [11.75, 15.00, 19.50, 10.00, 13.25, 17.25]
+
+Random.seed!(1)
+baseW  = [rand() for _ in 1:DAYS]                # taste weights
+weights = hcat( round.(baseW;        digits=2),
+                round.(1 .- baseW;   digits=2) )
+# [kcal  carb  prot  fat]  (per meal)
+nutrition = [ 975 102 41 35;
+             1025 128 32 40;
+              890 100 26 30;
+              665  90 45 20;
+              775 100 25 25;
+              800 110 34 28 ]
+
+nutr_lower = [3000, 484,  130,  20]        
+nutr_upper = [5250, 900, 300, 140]  
+
+# Enjoyment of restaurant (‑1, 0, +1)
+enjoy_val = [-1, 0, 2, 1, -1, 0]
+R_plus    = [r for r in 1:RESTAURANTS if enjoy_val[r] == 1]
+
+# ------------------------------ SET MODEL ----------------------------------- 
+m = Model(Gurobi.Optimizer)
+set_silent(m)
+@variable(m, x[1:DAYS, 1:RESTAURANTS], Bin)                 # dine / day,rest.
+@constraint(m, [d=1:DAYS], sum(x[d,r] for r=1:RESTAURANTS) == 1)
+@constraint(m, [r=1:RESTAURANTS], sum(x[d,r] for d=1:DAYS) <= 2)
+
+#------------------------------ enjoyment inventory --------------------------
+@variable(m, 0 <= E[1:DAYS] <= 6)
+@constraint(m, E[1] == 1)
+for d in 1:DAYS-1
+    @constraint(m, E[d+1] == E[d] + sum(enjoy_val[r] * x[d,r] for r=1:RESTAURANTS))
+end
+
+@variable(m, lowEnjoy[1:DAYS], Bin)
+bigM = 10
+@constraint(m, [d=1:DAYS], E[d] - 1   <=  bigM*(1 - lowEnjoy[d]))
+@constraint(m, [d=1:DAYS], E[d] - 0.1 >= -bigM*lowEnjoy[d])
+
+# Must pick a +1 restaurant when lowEnjoy == 1
+@constraint(m, [d=1:DAYS], sum(x[d,r] for r in R_plus) >= lowEnjoy[d])
+
+# ------------------ time bonus phi(E) via SOS‑2 approximation ---------------
+knot_E      = 0.0:6.0
+knot_factor = [1.0, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5] # When enjoyment not a dominant factor
+#knot_factor = [1.0, 1.0, 0.8, 0.6, 0.4, 0.2, 0.01] # When enjoyment is dominant factor 
+
+# when using the dominant enjoyment, the optimal solution will tend to go to the restaurant that 
+# can boost their enjoyment, because in this case "time" is only a dummy, the huge time reduce caused 
+# by enjoyment has already compensate the long time cost of some restaurant e.g. restaurant 3 have 
+# huge time cost on each day, never been choosed usually, but the enjoyment dominant 
+# condition will let it be reconsider.
+
+
+@variable(m, 0 <= lambda[1:DAYS, 1:length(knot_E)] <= 1)
+@variable(m, phi[1:DAYS] >= 0)
+
+for d in 1:DAYS
+    @constraint(m, sum(lambda[d,:]) == 1)
+    @constraint(m, E[d]         == sum(knot_E[k]      * lambda[d,k] for k in 1:length(knot_E)))
+    @constraint(m, phi[d]         == sum(knot_factor[k] * lambda[d,k] for k in 1:length(knot_E)))
+    @constraint(m, lambda[d,:] in SOS2())
+end 
+
+# ----------------------------- dynamic pricing ------------------------------
+price_base = fill(0.0, DAYS, RESTAURANTS)
+for d in 1:DAYS, r in 1:RESTAURANTS
+    f = 1.0
+    f = (r == 1 && d == 4)  ? 0.50 : f   # r1 Thu 50 %
+    f = (r == 3 && isodd(d)) ? 0.80 : f  # r3 odd‑days 20 %
+    f = (r == 4 && iseven(d)) ? 0.88 : f # r4 even‑days 12 %
+    price_base[d,r] = price[r] * f
+end
+
+@variable(m, z2[2:DAYS], Bin)  # r2 two days in a row   20 % discount
+@variable(m, y5[1:DAYS], Bin)  # first r5 visit         35 % discount 
+@variable(m, y6[1:DAYS], Bin)  # second r6 visit        16 % discount
+
+for d in 2:DAYS
+    @constraint(m, z2[d] <= x[d,2])
+    @constraint(m, z2[d] <= x[d-1,2])
+    @constraint(m, z2[d] >= x[d,2] + x[d-1,2] - 1)
+end
+
+@constraint(m, sum(y5) <= 1)
+for d in 1:DAYS
+    @constraint(m, y5[d] <= x[d,5])
+    if d > 1
+        @constraint(m, y5[d] + sum(x[k,5] for k=1:d-1) <= 1)
+    end
+end
+
+@constraint(m, sum(y6) <= 1)
+for d in 1:DAYS
+    @constraint(m, y6[d] <= x[d,6])
+    @constraint(m, y6[d] <= sum(x[k,6] for k=1:d-1))
+    if d > 1
+        @constraint(m, y6[d] >= x[d,6] + sum(x[k,6] for k=1:d-1) - 1)
+    else
+        @constraint(m, y6[d] == 0)   # cannot be “second” on day 1
+    end
+end
+
+# ---------------------------- objective parts -------------------------------
+@expression(m, expr_time,
+    sum(weights[d,1] * phi[d] * time[d,r] * x[d,r] for d=1:DAYS, r=1:RESTAURANTS))
+
+@expression(m, expr_money_base,
+    sum(weights[d,2] * price_base[d,r] * x[d,r] for d=1:DAYS, r=1:RESTAURANTS))
+
+@expression(m, expr_money_deals,
+      sum(weights[d,2] * 0.20 * price[2] * z2[d] for d=2:DAYS) +
+      sum(weights[d,2] * 0.35 * price[5] * y5[d] for d=1:DAYS) +
+      sum(weights[d,2] * 0.16 * price[6] * y6[d] for d=1:DAYS))
+
+@objective(m, Min, expr_time + expr_money_base - expr_money_deals)
+optimize!(m)  
+# ----------------------------- report ---------------------------------------
+if termination_status(m) == MOI.OPTIMAL
+    println("\n---- FINAL PLAN ----")
+    println("Daily weight vector (time  money):")
+    for d in 1:DAYS
+        println("  Day $d -> (", weights[d,1], ", ", weights[d,2], ")")
+    end
+
+    daily_time  = zeros(DAYS)
+    daily_money = zeros(DAYS)
+
+    println("\nDay‑by‑day details:")
+    for d in 1:DAYS
+        # chosen restaurant
+        r_idx = findfirst(r -> value(x[d,r]) > 0.5, 1:RESTAURANTS)
+
+        # ---------- unweighted time ----------
+        daily_time[d] = time[d, r_idx]        # raw travel minutes
+
+        # ---------- unweighted money ----------
+        # base dynamic price (Thu 50 %, etc.)
+        cost = price_base[d, r_idx]
+
+        # extra deal discounts realised in the solution
+        if r_idx == 2 && value(z2[d]) > 0.5
+            cost -= 0.20 * price[2]
+        elseif r_idx == 5 && value(y5[d]) > 0.5
+            cost -= 0.35 * price[5]
+        elseif r_idx == 6 && value(y6[d]) > 0.5
+            cost -= 0.16 * price[6]
+        end
+        
+        daily_money[d] = cost
+
+        println("  Day $d -> R$r_idx   (E = ",
+                round(Int, value(E[d])), ", phi = ",
+                round(value(phi[d]), digits=2), ")  |  ",
+                "Time = ", round(daily_time[d] * value(phi[d]), digits=2), " min",
+                "  Money = \$", round(daily_money[d], digits=2))
+    end
+    result = objective_value(m)
+    println("\nWEIGHTED objective value = ", round(result, digits=2))
+
+    println("\n---- Unweighted totals ----")
+    println("Total travel time  : ", sum(daily_time), " min")
+    println("Total money spent  : \$", round(sum(daily_money), digits=2))
+else
+    println("\nNo optimal nutrition‑feasible plan found.")
+end
+
+
+\end{verbatim}

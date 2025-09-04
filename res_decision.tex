@@ -1,0 +1,42 @@
+
+\begin{figure}[ht]
+    \centering
+
+\begin{tikzpicture}[
+    node distance=1.8cm and 1.2cm, % Distance between nodes
+    node_style/.style={circle, draw, minimum size=1cm}, % Style for the nodes
+    font=\Large % Font size for node labels
+]
+
+% --- Nodes ---
+% The node for the choice on day 'd'
+\node[node_style] (D_dr) {$D_{d,r}$};
+
+% The nodes for the choices on day 'd+1'
+% Positioned relative to D_dr
+\node[node_style, below left=of D_dr] (D_dr1) {$D_{d+1, r_1}$};
+\node[node_style, below=of D_dr] (D_dr2) {$D_{d+1, r_2}$};
+\node[node_style, below right=of D_dr] (D_dr3) {$D_{d+1, r_3}$};
+
+% --- Arcs ---
+% Drawing the connections between nodes
+\draw (D_dr) -- (D_dr1);
+\draw (D_dr) -- (D_dr2);
+\draw (D_dr) -- (D_dr3);
+
+% --- Arc Label ---
+% Place the text for the label to the right of D_dr3
+\node[right=0.5cm of D_dr3] (label_text) {$\mathbf{f}(D_{d,r}, D_{d+1, r_3})$};
+
+% Find a point on the arc to start the arrow.
+% 'pos=0.6' means 60% along the path from D_dr to D_dr3.
+\path (D_dr) -- (D_dr3) coordinate[pos=0.6] (arc_midpoint);
+
+% Draw a curved arrow from the arc to the label text.
+% 'bend left' makes the arrow curve upwards (concave up relative to the line segment).
+\draw[-{Stealth[length=2mm]}, bend left] (arc_midpoint) to (label_text);
+
+\end{tikzpicture}
+\caption{A segment of the restaurant decision graph, from day $d$ to $d+1$.}
+\label{fig:res_decision}
+\end{figure}

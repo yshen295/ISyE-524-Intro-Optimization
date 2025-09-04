@@ -1,0 +1,22 @@
+A Chinese wisdom has been driving generations of innovators and entrepreneurs: ``Time is money; efficiency is life.'' This principle, first proclaimed during China's economic reforms in 1981, resonates deeply with the daily reality of college students navigating campus life. Indeed, time and efficiency have become the constant pursuit of students hurrying between classes, strategically timing their meals to avoid crowded dining halls, and calculating the optimal schedules across campus to maximize precious minutes between lectures.
+
+This project is our answer to this challenge. 
+
+We optimize for weekly lunch decisions given a fixed schedule and daily targets. The daily targets determine how we balance food cost and commuting time for the day. The best food plan would also satisfy our nutritional needs, which is used to check the validity of a solution. Our decision would also be affected by discounts and deals, as well as our enjoyment level from having different kinds of food.
+
+We then utilize the solution to the optimization formulation, or the "optimal plan", under different daily targets, to explore the trade-offs one needs to make if they are more concerned with commuting time or the cost of food, respectively. We are also interested in knowing if there exists a ``Restaurant of the Week'' that is chosen by a significant portion of people, regardless of their different daily targets. Finally, we also explore whether consistent optimal restaurant choices emerge over the week, and how these patterns are influenced by nutritional constraints
+
+The main part of the project will be construct into 5 parts:
+Part I – Problem Data: Setting the Stage. We assemble the inputs and parameterize the environment:
+(i) Restaurant & food options with prices (including time-limited discounts) and basic nutrition;
+(ii) Course schedule & transit times from varying starting points;
+(iii) Discounts and deals as scenario parameters;
+(iv) Enjoyment and agility scores capturing cuisine preferences and flexibility.
+
+Part II – Modeling. We formalize the daily restaurant assignment as an optimization problem: define decision variables, objectives (cost vs. commuting time, with preference weights), and constraints. We then add a nutrition feasibility check (e.g., minimum calories/protein) as higher-level constraints.
+
+Part III – Computational Solution. We implement the model in Julia (JuMP/HiGHS), describe the simulation setup, and outline code design choices that ensure reproducibility.
+
+Part IV – Results and Discussion. We analyze solutions under three preference profiles (time-saving, budget-saving, balanced), quantify the cost of a healthy diet, and examine the emergence of an optimal plan (e.g., whether a “Restaurant of the Week” appears across settings).
+
+Part V – Conclusion and Future Directions. We summarize practical takeaways for students with fixed schedules and sketch extensions (stochastic delays, richer nutrition, group decisions).

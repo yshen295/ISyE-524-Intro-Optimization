@@ -1,0 +1,757 @@
+\documentclass{article}
+
+%---------------------------------------------------------------------------------
+%   PREAMBLE
+%---------------------------------------------------------------------------------
+
+% --- Page Layout & Spacing ---
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\setstretch{1.2}
+\usepackage{float}      
+
+% --- Typography & Language ---
+\usepackage[T1]{fontenc} % For better font encoding and output
+\usepackage[english]{babel}
+\usepackage[autostyle, english = american]{csquotes}
+\MakeOuterQuote{"}
+
+% --- Math Packages ---
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{bm} % For bold math \bm{...}
+
+% --- Graphics & Tables ---
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{caption} % Needed for \captionof
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta, decorations.pathreplacing, calc, decorations.text}
+
+% --- Code Listings ---
+\usepackage{tcolorbox}
+\tcbuselibrary{minted,skins}
+\usepackage{xcolor}
+\usepackage{fancyvrb}
+
+% --- Algorithms ---
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% --- Other Utilities ---
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{enumitem}
+\usepackage[absolute,overlay]{textpos} % For textblock overlay
+
+%----------------------------------------------------------------------------------------
+%   CUSTOM COMMANDS & SETTINGS
+%----------------------------------------------------------------------------------------
+
+% TikZ settings from original document
+\def\xscale{1.45}      % horizontal stretch
+\def\yscale{1.25}      % vertical stretch
+\def\Ysep{-6.3}        % drop of local ξ–axis
+\def\BraceRaise{8pt}   % lift of braces above x–axis
+
+% Textpos settings for the course overlay
+\setlength{\TPHorizModule}{1mm}
+\setlength{\TPVertModule}{1mm}
+
+% Math shortcuts
+\newcommand{\colvec}[1]{\begin{bmatrix} #1 \end{bmatrix}}
+\renewcommand{\vec}[1]{\mathbf{#1}}
+\newcommand{\tx}[1]{\text{#1}}
+\newcommand{\bd}[1]{\mathbf{#1}}
+\newcommand{\dif}{\mathrm{d}}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    filecolor=magenta,
+    urlcolor=cyan,
+    pdftitle={A Strategist's Guide to Campus Dining}, % Example of PDF metadata
+    pdfauthor={Yufei Shen, Harry Luo},
+}
+
+% Table of contents depth
+\setcounter{tocdepth}{2}
+
+% --- Custom Verbatim and Minted Environments ---
+
+% Define a custom version of the verbatim environment with dark gray text
+\DefineVerbatimEnvironment{Verbatim}{Verbatim}{formatcom=\color{gray!90!black}}
+
+% Globally redefine the default verbatim environment to use this custom one
+\let\oldverbatim\verbatim
+\let\endoldverbatim\endverbatim
+\RenewDocumentEnvironment{verbatim}{}{%
+  \Verbatim
+}{%
+  \endVerbatim
+}
+
+% Custom minted box with a shadow
+\newtcblisting{shadowminted}[1][]{%
+  listing engine=minted,
+  listing only,
+  minted language=julia,
+  minted options={breaklines, #1},
+  colback=gray!5,       % light gray background
+  colframe=gray!70!black, 
+  boxrule=0pt,
+  arc=2pt,
+  enhanced,
+  shadow={0.5mm}{-0.5mm}{0.8mm}{black!25}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+% This textblock is an overlay positioned relative to the page corner.
+\begin{textblock}{60}(10,10) % {width}(x-offset,y-offset)
+  \normalsize ISyE 524 Top Winning Project 
+\end{textblock}
+
+%----------------------------------------------------------------------------------------
+%   TITLE PAGE
+%----------------------------------------------------------------------------------------
+\begin{titlepage}
+    \centering % Center all content on the page
+    
+    \vfill % Flexible space above the title
+    
+    % --- Title Block ---
+    % Using a parbox ensures the content is centered as a block
+    \parbox{\textwidth}{
+        \centering
+        \huge\bfseries
+        A Strategist's Guide to Campus Dining:\\[2ex]
+        \mdseries\Large 
+        A Multifactor Optimization Approach
+    }
+    
+    \vfill % Flexible space between title and author
+    
+    % --- Author & Date Block ---
+    \parbox{0.8\textwidth}{
+        \centering
+        \large
+        Yufei Shen, Harry Luo\\[1ex]
+        June, 1925
+    }
+    
+    \vfill % Flexible space between author and figure
+    
+    % --- Figure Block ---
+    % Using \includegraphics and \captionof is more stable than a figure env here
+    \parbox{0.9\textwidth}{
+        \centering
+        \includegraphics[width=\linewidth]{Dining_map.jpg}
+        \captionof{figure}{A Typical Week of Lunch Choices; No one visits Mem Union :(}
+        \label{fig:enter-label} % The label should be after the caption
+    }
+    
+\end{titlepage}
+
+
+%-------------------------------begin progress report
+
+% \title{A Strategist's Guide to Campus Dining\\[1ex]}
+% %\large\textit{A Progress Report}}
+% \author{Yufei Shen, Harry Luo}
+% \date{}
+% \maketitle
+
+
+
+% \section*{Note on Progress Report}
+% \begin{itemize}
+%     \item Introduction: See below (Sec \ref{sec:intro}.)
+%     \item Discussion: Model \& Computational solution complete. Need more work in presenting, analyzing, and discussing results. Need advice on writing discussion and conclusion.
+%     \item Issues: 
+%         \begin{itemize}
+%             \item We have not started collecting references yet. In fact, the majority of our current work was done without references to external literature. What is the expectation on bibliography and references?
+%             \item We are using ``SOS2'' to construct a piecewise linear function to handel ``Speed Buff'' due to enjoyment. However, we need more knowledge on Special Ordered Sets before we are confident in writing it down.
+%         \end{itemize}
+% \end{itemize}
+
+
+%---------------------------end Progress report
+\newpage
+\tableofcontents
+
+\newpage
+
+\section{Introduction}
+\label{sec:intro}
+A Chinese wisdom has been driving generations of innovators and entrepreneurs: ``Time is money; efficiency is life.'' This principle, first proclaimed during China's economic reforms in 1981, resonates deeply with the daily reality of college students navigating campus life. Indeed, time and efficiency have become the constant pursuit of students hurrying between classes, strategically timing their meals to avoid crowded dining halls, and calculating the optimal schedules across campus to maximize precious minutes between lectures. This project is our answer to this challenge. We optimize for weekly lunch decisions given a fixed schedule and daily targets. The daily targets determine how we balance food cost and commuting time for the day. The best food plan would also satisfy our nutritional needs, which is used to check the validity of a solution. Our decision would also be affected by discounts and deals, as well as our enjoyment level from having different kinds of food.
+
+We then utilize the solution to the optimization formulation, or the "optimal plan", under different daily targets, to explore the trade-offs one needs to make if they are more concerned with commuting time or the cost of food, respectively. We are also interested in knowing if there exists a ``Restaurant of the Week'' that is chosen by a significant portion of people, regardless of their different daily targets. Finally, we also explore whether consistent optimal restaurant choices emerge over the week, and how these patterns are influenced by nutritional constraints
+
+The main part of the project will be construct into 5 parts:
+
+Part I – Problem Data: Setting the Stage. We assemble the inputs and parameterize the environment:
+
+(i) Restaurant and food options with prices (including time-limited discounts) and basic nutrition;
+
+(ii) Course schedule and transit times from varying starting points;
+
+(iii) Discounts and deals as scenario parameters;
+
+(iv) Enjoyment and agility scores capturing cuisine preferences and flexibility.
+
+Part II – Modeling. We formalize the daily restaurant assignment as an optimization problem: define decision variables, objectives, and constraints. We then add a nutrition feasibility check as higher-level constraints.
+
+Part III – Computational Solution. We implement the model in Julia (JuMP/Gurobi), describe the simulation setup, and outline code design choices that ensure reproducibility.
+
+Part IV – Results and Discussion. We analyze solutions under three preference profiles (time-saving, budget-saving, balanced), quantify the cost of a healthy diet, and examine the emergence of an optimal plan. We then discuss the effects of assumptions on shaping the computational output.
+
+Part V – Conclusion and Future Directions. We summarize practical takeaways for students with fixed schedules and sketch extensions. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Problem Data: Setting the Stage}
+\subsection{Restaurant and Food Options}
+Based on a survey of a sample size $=2$ (the two authors), a UW-Madison student might frequent the following list of restaurants (table 
+\ref{tab:res_map}), to which we denote from R1 to R6.
+\input{tab:res_map}
+For simplicity, we assume that each restaurant only serves one food option. Food prices and nutrition facts are gathered with the help of generative AI. In particular, there are two Subway stores near campus: R1 (Subway) and R2 (Subway 2). To make them distinct, we assume that Subway 2 only serves Tuna Sandwichs (\$15).
+
+\subsection{Course Schedule and Transit Time}
+A schedule for a hypothetical undergraduate student is generated below, with total time cost of dining at restaurant $R_j$ and commuting to the subsequent building (Table \ref{tab:transit}). 
+\input{tab:transit}
+
+
+\subsection{Discounts and Deals}
+\label{sec:deals}
+A dollar saved is a dollar earned. We design a deal policy for certain restaurants, motivated by common discount events. These policies are divided into two categories: fixed daily discounts and conditional discounts that depend on the visit history.
+
+\begin{itemize}
+\item \textbf{Fixed Daily Discounts:} These are promotions offered by specific restaurants on certain days of the week.
+\begin{itemize}
+\item \textbf{Restaurant 1:} 50\% discount on Thursday (\textit{Thursday Madness}).
+\item \textbf{Restaurant 3:} 20\% discount on odd-numbered days (i.e., Day 1, 3, and 5).
+\item \textbf{Restaurant 4:} 12\% discount on even-numbered days (i.e., Day 2 and 4).
+\end{itemize}
+\item \textbf{Conditional Visit-Based Discounts:} These are special deals earned based on the pattern of visits to a restaurant each week.
+\begin{itemize}
+\item \textbf{Restaurant 2:} A 20\% discount is applied on the second day of any two consecutive-day visits.
+\item \textbf{Restaurant 5:} A 35\% discount is applied on the \textit{first} visit.
+\item \textbf{Restaurant 6:} A 16\% discount is applied on the \textit{second} visit.
+\end{itemize}
+\end{itemize}
+
+\subsection{Enjoyment and Agility}
+\label{sec:happiness}
+Good food changes people. Different food options would also affect our happiness, with higher happiness in turn making us more agile (walks faster). To model this, we introduce a daily ``Enjoyment Index," denoted by $E_d$, which is a state variable that evolves based on dining choices.
+The student begins on Day 1 with a baseline Enjoyment Index of $E_1 = 1$. Each day, the choice of restaurant modifies the index for the following day. The specific enjoyment values contributed by each restaurant are as follows:
+\begin{itemize}
+\item \textbf{Restaurant 3:} +2 (Dagu makes one happy)
+\item \textbf{Restaurant 4:} +1
+\item \textbf{Restaurant 2, 6:} 0
+\item \textbf{Restaurant 1, 5:} -1 (Subway and Gordon's make one sad)
+\end{itemize}
+
+The happier we are, the faster we walk (or even skip!). This Enjoyment Index, \(E_d\), directly influences the student's agility through a time multiplier, \(\phi_d\). The effective travel time cost for day \(d\) is scaled by this multiplier, becoming \(\phi_d \times \text{time}_{d,r}\). A lower \(\phi_d\) represents a ``speed buff," making travel feel shorter.
+
+The relationship between \(E_d\) and \(\phi_d\) is modeled as a continuous, piecewise linear function defined as:
+\begin{equation}
+\phi_d =
+\begin{cases}
+1.0 & \text{if } 0 \le E_d \le 1, \\
+1.1 - 0.1 \cdot E_d & \text{if } 1 \le E_d \le 6.
+\end{cases}
+\label{eq:phi}
+\end{equation}
+
+This means that for every point of enjoyment gained above 1, the student receives a 10\% ``speed buff" (a 0.1 reduction in travel time), up to a maximum buff of 50\% when the Enjoyment Index reaches 6.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Modeling}
+\subsection{The Daily Restaurant Assignment Model}
+We set out to find the best weekly sequence of restaurant choices that balances monetary expenses and commuting time, while also accounting for dynamic factors like deals and enjoyment.
+
+Conceptually, this problem can be visualized as finding an optimal path through a decision graph, as shown in Figure~\ref{fig:res_decision}. Each node $D_{d,r}$ represents the choice of restaurant $r$ on day $d$. The goal is to select one node for each of the five days, forming a ``path" that represents the weekly dining plan.
+\input{fig:res_decision}
+
+We formulate the problem algebraically using an assignment-based model that directly reflects the implementation.
+
+\subsubsection*{Sets and Parameters}
+\label{sec:para}
+\begin{itemize}
+    \item $D = \{1, \dots, 5\}$: The set of days.
+    \item $R = \{1, \dots, 6\}$: The set of available restaurants.
+    \item $t_{d,r}$: The travel time to restaurant $r$ on day $d$.
+    \item $p_r$: The base price of a meal at restaurant $r$.
+    \item $c_{d,r}$: The price of a meal at restaurant $r$ on day $d$ after applying any \textit{fixed daily discounts}.
+    \item $e_r$: The enjoyment value gained from visiting restaurant $r$.
+    \item $\bd{W}$: A $5 \times 2$ matrix where $W_{d,1}$ and $W_{d,2}$ are the non-negative weights for time and money on day $d$, respectively.
+\end{itemize}
+
+\subsubsection*{Decision Variables}
+\begin{itemize}
+    \item $x_{d,r} \in \{0, 1\}$: A binary variable, equal to 1 if restaurant $r$ is chosen on day $d$, and 0 otherwise.
+    \item $E_d \in [0, 6]$: A continuous variable representing the Enjoyment Index on day $d$.
+    \item $\phi_d \ge 0$: A continuous variable for the time multiplier on day $d$, defined in eq. \ref{eq:phi}
+    \item $y_{2,d}, y_{5,d}, y_{6,d} \in \{0, 1\}$: Auxiliary binary variables to indicate if a specific conditional deal for restaurants 2, 5, or 6 is activated on day $d$.
+\end{itemize}
+
+
+\subsubsection*{Objective Function}
+The objective is to minimize the total weighted cost, which is the sum of weighted time and money costs, less the value of any activated conditional deals.
+\begin{equation}
+\min \quad \underbrace{\sum_{d \in D} \sum_{r \in R} W_{d,1} \, \phi_d \, t_{d,r} \,x_{d,r}}_{\text{Weighted Time Cost}} + \underbrace{\sum_{d \in D} \sum_{r \in R} W_{d,2} \, c_{d,r} \, x_{d,r}}_{\text{Weighted Money Cost}} - \Omega ,
+\label{eq:obj}
+\end{equation}
+where $\Omega$ represents the total weighted value of all conditional deals, broken down by restaurant:
+\begin{align*}
+\Omega = 
+\quad &\underbrace{\sum_{d=2}^{5} W_{d,2} (0.20 p_2) y_{2,d}}_{\text{R2 Deal: Consecutive Days}} \\
+&+ \underbrace{\sum_{d \in D} W_{d,2} (0.35 p_5) y_{5,d}}_{\text{R5 Deal: First Visit}} \\
+&+ \underbrace{\sum_{d \in D} W_{d,2} (0.16 p_6) y_{6,d}}_{\text{R6 Deal: Second Visit}}.
+\end{align*}
+
+
+
+\subsubsection*{Constraints}
+\label{sec:constraints}
+\begin{itemize}
+    \item \textbf{Daily Choice:} We must select exactly one restaurant each day.
+    \[ \sum_{r \in R} x_{d,r} = 1 \quad \forall d \in D \]
+
+    \item \textbf{Visit Limit:} A specific restaurant cannot be visited more than twice during the week.
+    \[ \sum_{d \in D} x_{d,r} \le 2 \quad \forall r \in R \]
+
+    \item \textbf{Enjoyment Dynamics:} The Enjoyment Index starts at 1 and evolves based on daily choices. The time multiplier $\phi_d$ is linked to $E_d$ via the piecewise linear function defined in Sec \ref{sec:happiness}, which is enforced using SOS2 constraints.
+    \begin{align*}
+    E_1 &= 1 \\
+    E_{d+1} &= E_d + \sum_{r \in R} e_r x_{d,r} \quad \forall d \in \{1, \dots, 4\}
+    \end{align*}
+
+    \item \textbf{Conditional Deal Logic:} The auxiliary deal variables are linked to the primary choice variables. For the ``two days in a row'' deal for Restaurant 2, the constraints are:
+    \begin{align*}
+    y_{2,d} &\le x_{d,2} \quad \forall d \in \{2, \dots, 5\} \\
+    y_{2,d} &\le x_{d-1,2} \quad \forall d \in \{2, \dots, 5\} \\
+    y_{2,d} &\ge x_{d,2} + x_{d-1,2} - 1 \quad \forall d \in \{2, \dots, 5\}
+    \end{align*}
+    This set of constraints ensures $y_{2,d}$ is 1 if and only if both $x_{d,2}$ and $x_{d-1,2}$ are 1. Similar logic is applied to model the first-visit deal for R5 ($y_{5,d}$) and the second-visit deal for R6 ($y_{6,d}$).
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+
+% Maybe run optimization and show result berofe imposing further constrants
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{The Nutrition Feasibility Check}
+\label{sec:nutrition}
+Busy as we are, we still have great care for healthy diets. We predefine a set of nutritional goals for each week, and for any given path $\mathbf{p}$, we must verify if it meets the nutrition goals.
+
+Let:
+\begin{itemize}
+    \item $\mathbf{n}_{d,r}$: A vector of nutritional values (e.g., calories, protein) associated with the transition on day $d$ to $r$ on day $d+1$.
+    \item $\mathbf{N}_{\text{lower}}$, $\mathbf{N}_{\text{upper}}$: Bound vectors for the total nutritional values over the 5-day period.
+\end{itemize}
+
+The total nutritional value for a path $\mathbf{p}$ is the sum of the nutrition vectors of its constituent arcs. Let $A(\mathbf{p})$ be the set of arcs corresponding to path $\mathbf{p}$.
+
+$$\mathbf{N}_{\text{total}}(\mathbf{p}) = \sum_{(d,r) \in A(\mathbf{p})} \mathbf{n}_{d,r}.$$
+
+The path $\mathbf{p}$ is \textbf{nutritionally feasible }if and only if:
+$$
+\mathbf{N}_{\text{lower}} \le \mathbf{N}_{\text{total}}(\mathbf{p}) \le \mathbf{N}_{\text{upper}}.
+$$
+This is a component-wise vector inequality.
+
+
+
+
+
+
+\section{Computational Solution}
+
+\subsection{Simulation and Code Design}
+\label{sec:code_design}
+We consider two degrees of freedom in this project. 
+
+Firstly, we consider students of different dining preferences, namely: people who only prioritize having food with the least budget (\textit{Money first}), people who only prioritize having food that takes the least amount of time (\textit{Time first}), and those who have relatively balanced preferences (\textit{Arbitrary}), whose preference profile will be generated at random.
+
+Secondly, we consider the effect of nutrition constraints. One can certainly have healthy diets on campus, but we ask the question ``What, then, must we give in return?''. We explore this by running the model with the same\textit{ Arbitrary} profile from above, but first without considering nutrition constraints, and then using Nutrition Feasibility Check discussed in Sec \ref{sec:nutrition}.
+
+Finally, we explore a restaurant pattern across 1,000 simulations initiated with random profiles and then analyze it for an optimal dining plan.
+
+The mathematical model was implemented in the Julia programming language, using the \texttt{JuMP} package for algebraic modeling and \texttt{Gurobi} as the Mixed-Integer Linear Programming (MILP) solver. We outline the implementation below, with the complete code available in the \nameref{appendix}.
+
+
+
+\subsubsection{The Core Model}
+
+The core script solves the primary optimization problem \textbf{without} considering nutritional constraints. The implementation closely mirrors the mathematical formulation. Full code is attached in Appendix: \nameref{sec:code_1}.
+
+We begin by initializing the model. In particular, we first initiate the 5-by-2 weight matrix $\bd{W}$ that governs the preference between time and money cost over a week using seeded random. ~(see \ref{sec:para}).
+
+\begin{shadowminted}
+Random.seed!(1)
+baseW  = [rand() for _ in 1:DAYS]
+
+# The weight of each day will sum up to 1
+weights = hcat( round.(baseW; digits=2), 
+                round.(1 .- baseW; digits=2) )
+\end{shadowminted}
+
+We then load the fixed discounts and deals for each restaurant:
+\begin{shadowminted}
+price_base = fill(0.0, DAYS, RESTAURANTS)
+for d in 1:DAYS, r in 1:RESTAURANTS
+    f = 1.0  # default: no discount
+    # If restaurant 1 on day 4, apply 50% price
+    f = (r == 1 && d == 4)  ? 0.50 : f
+    # If restaurant 3 on an odd-numbered day, apply 20% off (pay 80%)
+    f = (r == 3 && isodd(d)) ? 0.80 : f
+    # If restaurant 4 on an even-numbered day, apply 12% off (pay 88%)
+    f = (r == 4 && iseven(d)) ? 0.88 : f
+    # Final price for this (day, restaurant)
+    price_base[d, r] = price[r] * f
+end
+\end{shadowminted}
+
+We then introduce the decision variables:
+\begin{shadowminted}
+@variable(m, x[1:DAYS, 1:RESTAURANTS], Bin) # dine / day,rest.
+@variable(m, 0 <= E[1:DAYS] <= 6)
+@variable(m, phi[1:DAYS] >= 0)
+@variable(m, y2[2:DAYS], Bin)  # r2 two days in a row
+@variable(m, y5[1:DAYS], Bin)  # first r5 visit
+@variable(m, y6[1:DAYS], Bin)  # second r6 visit
+\end{shadowminted}
+
+
+The objective function is then constructed from expressions representing weighted time, weighted base money cost, and weighted deal discounts (Eq. \ref{eq:obj}).
+
+\begin{shadowminted}
+    @expression(m, expr_time,
+    sum(weights[d,1] * phi[d] * time[d,r] * x[d,r] for d=1:DAYS, r=1:RESTAURANTS))
+
+# Direct cost (fixed deal included in constraint)
+@expression(m, expr_money_base,
+    sum(weights[d,2] * price_base[d,r] * x[d,r] for d=1:DAYS, r=1:RESTAURANTS))
+
+# Conditional deal 
+@expression(m, expr_money_deals,
+      sum(weights[d,2] * 0.20 * price[2] * y2[d] for d=2:DAYS) +
+      sum(weights[d,2] * 0.35 * price[5] * y5[d] for d=1:DAYS) +
+      sum(weights[d,2] * 0.16 * price[6] * y6[d] for d=1:DAYS)) 
+
+@objective(m, Min, expr_time + expr_money_base - expr_money_deals)
+
+\end{shadowminted}
+
+Key constraints are implemented to enforce daily choices, restaurant visit limits, and the dynamics of the Enjoyment Index and its effect on the time multiplier (as discussed in sec \ref{sec:constraints}).
+
+\begin{shadowminted}
+    @constraint(m, [d=1:DAYS], sum(x[d,r] for r=1:RESTAURANTS) == 1) # Choose one arc for each day
+@constraint(m, [r=1:RESTAURANTS], sum(x[d,r] for d=1:DAYS) <= 2) # Restrict each restaurant 2 time per week
+
+@constraint(m, E[1] == 1) # Initial enjoyment
+
+for d in 1:DAYS-1 # Inventory balance for enjoyment
+    @constraint(m, E[d+1] == E[d] + sum(enjoy_val[r] * x[d,r] for r=1:RESTAURANTS))
+end
+
+# SOS-2 approximation for phi(E)
+@variable(m, 0 <= lambda[1:DAYS, 1:length(knot_E)] <= 1)
+
+for d in 1:DAYS
+    @constraint(m, sum(lambda[d,:]) == 1)
+    @constraint(m, E[d] == sum(knot_E[k] * lambda[d,k] for k in 1:length(knot_E)))
+    @constraint(m, phi[d] == sum(knot_factor[k] * lambda[d,k] for k in 1:length(knot_E)))
+    @constraint(m, lambda[d,:] in SOS2())
+end
+\end{shadowminted}
+
+The conditional deal logic for `y2', `y5', and `y6' variables is implemented using a combination of linear constraints to activate the binary deal variables.
+
+Restaurant 2: two days in a row discount is implemented as follows.
+\begin{shadowminted}
+for d in 2:DAYS 
+    @constraint(m, y2[d] <= x[d,2])  # z2 can be 1 only if we choose r=2 on day d
+    @constraint(m, y2[d] <= x[d-1,2])  # and only if we chose r=2 on day d-1
+    # if both days chose r=2, force y2[d]=1 
+    @constraint(m, y2[d] >= x[d,2] + x[d-1,2] - 1) 
+end
+\end{shadowminted}
+
+Restaurant 5: first visit discount is implemented as follows.
+\begin{shadowminted}
+@constraint(m, sum(y5) <= 1)  # allow marking at most one first-visit day
+for d in 1:DAYS
+    @constraint(m, y5[d] <= x[d,5])
+    if d > 1
+        @constraint(m, y5[d] + sum(x[k,5] for k=1:d-1) <= 1)# y5 can only be 1 on the first day r=5 appears
+    end
+end
+\end{shadowminted}
+Restaurant 6: second visit discount is implemented as follows.
+\begin{shadowminted}
+@constraint(m, sum(y6) <= 1) # can mark at most one second-or-later day, caps total visits at <= 2
+for d in 1:DAYS
+    @constraint(m, y6[d] <= x[d,6])
+    @constraint(m, y6[d] <= sum(x[k,6] for k=1:d-1))
+    if d > 1
+        @constraint(m, y6[d] >= x[d,6] + sum(x[k,6] for k=1:d-1) - 1)
+    else
+        @constraint(m, y6[d] == 0) # cannot be the "second" on day 1
+    end
+end
+\end{shadowminted}
+
+
+
+
+
+\subsubsection{The Nutritious Addition}
+We now consider the nutrition validation as an addition to the core model.
+
+When the optimal path $\mathbf{p}^*$ from the cost minimization problem is found to be \textbf{nutritionally infeasible}, it must be discarded. We then need to find the next-best path and repeat the check. This creates an iterative algorithm where we solve the optimization problem, check for feasibility, and if the path fails, add a constraint to exclude it from future consideration.
+
+This iterative process, which incorporates the nutrition feasibility check and ``no-good" cuts, is implemented using a `while' loop that repeatedly solves the MILP and adds a constraint if the nutrition targets are not met (Algorithm \ref{alg:iterative_path_finding}). This part of the code corresponds to the second script provided in Appendix: \nameref{sec:code_2}. A snippet is converted from \ref{alg:iterative_path_finding} to Julia below.
+
+\begin{algorithm}[h]
+\caption{Iterative Path Finding with Nutritional Feasibility Check}
+\label{alg:iterative_path_finding}
+\begin{algorithmic}[1]% [1] adds line numbers
+\While{a nutritionally feasible path has not been found}
+    \State Solve the current MILP formulation to find the optimal path, $\mathbf{p}_k$.
+    \If{the MILP is infeasible}
+        \State \textbf{Terminate:} No solution exists that satisfies all constraints.
+        \State \Return ``No feasible path found''
+    \EndIf
+    \State Let $S_k$ be the set of arcs corresponding to path $\mathbf{p}_k$.
+    \State Calculate the total nutrition vector $\mathbf{N}_{\text{total}}(\mathbf{p}_k) = \sum_{(d,r,r') \in S_k} \mathbf{n}_{d,r,r'}$.
+    \If{$\mathbf{N}_{\text{lower}} \le \mathbf{N}_{\text{total}}(\mathbf{p}_k) \le \mathbf{N}_{\text{upper}}$ (component-wise)}
+        \State \textbf{Terminate:} Path $\mathbf{p}_k$ is nutritionally feasible.
+        \State \Return $\mathbf{p}_k$ as the final, optimal, and feasible solution.
+    \Else
+        \State Add ``no-good'' cut to the current solution to exclude path $\mathbf{p}_k$:
+         $\displaystyle\sum_{(d,r) \in S_k} x_{d,r} \le 4$
+        \State \Comment{This cut ensures $\mathbf{p}_k$ will not be chosen again.}
+    \EndIf
+\EndWhile
+\end{algorithmic}
+\end{algorithm}
+
+
+
+
+\begin{shadowminted}
+    cut_cnt   = 0
+tot_nutr  = zeros(4)
+while cut_cnt < 30 # Avoid infinite loop
+    optimize!(m)
+    if termination_status(m) != MOI.OPTIMAL
+        println("m infeasible or not optimal.")
+        break
+    end
+    # We will find the suboptimal solution if the optimal solution does not fulfill the nutrition constraints, repeat the process to find the optimal solution fulfill the constraints.
+    chosen = [(d,r) for d in 1:DAYS, r in 1:RESTAURANTS if value(x[d,r]) > 0.5]
+    tot_nutr = sum(nutrition[r,:] for (_ ,r) in chosen)
+    viol_low  = max.(0.0, nutr_lower .- tot_nutr)
+    viol_high = max.(0.0, tot_nutr .- nutr_upper)
+    violated  = any(viol_low  .> 1e-6) || any(viol_high .> 1e-6)
+    if violated
+        cut_cnt += 1
+        @constraint(m, sum(x[d,r] for (d,r) in chosen) <= DAYS - 1)
+    else
+        println("----------Nutrition satisfied after cut_cnt cut(s)----------")
+        break
+    end
+end
+\end{shadowminted}
+
+
+
+
+
+
+
+
+\section{Results and Discussion}
+
+
+\subsection{Three Different Dining Preferences}
+\subsubsection{Raw Results}
+We begin exploring the results by first comparing the optimal plan \textbf{without nutrition constraints}, with three different dining preferences:
+
+\begin{itemize}
+    \item \textbf{Profile 1: Only Prioritize Money over Time (Money First)}
+
+    We manually set the preference weight matrix $\bd{W}_{i,:} = [0 \quad 1], \; \forall i$ (100\% emphasis on money).
+    
+    Raw results:
+
+    \input{result:only_money}
+    
+    \item \textbf{Profile 2: Only Prioritize Time over Money (Time First)}
+
+    We manually set the  preference weight matrix $\bd{W}_{i,:} = [1 \quad 0], \; \forall i$ (100\% emphasis on time).
+    
+    Raw results:
+    \input{result:only_tim}
+
+    \item \textbf{Profile 3: }An arbitrary preference matrix is generated with \texttt{seed = 1}. 
+    
+    Raw results:
+    \input{result:rand_no_NU.tex}
+    
+\end{itemize}
+
+\subsubsection{Comparison of Different Preferences}
+We summarize the weekly optimal plan given three different preferences below (Table \ref{tab:m_vs_t_vs_a}).
+
+
+\input{table:M_vs_T_vs_A}
+
+% \colorbox{yellow}{At first glance} we see that there are only subtle change on the choice for restaurants. The first two days remain the same, from Wednesday to Friday, there only appear number 1, 2 and 5 restaurants, but we can see significant change of the time and money. Meaning that the sequence of choosing restaurant matters a lot in our scenario.
+
+% Compare "Money First" and "Time First" we can see that the sequence matters a lot to this two data. "Time First" abandoned the cost of money, making the difference of Thursday, which should be the optimal solution to eat restaurant 1 on Thursday to have the huge discount on money and rather low time cost, instead we go to the time optimal solution which is a nearer subway, but restaurant 1 still have the overall benefit beyond others, so the money cost will have rather high increase but also having a low time cost. 
+
+% Compare to the extreme condition, the arbitrary profile give a pretty balanced profile which can all most make the weight sum of time and money equal for a week, and we can see that the time cost and money cost are between the two, which align with our prediction since its a balanced profile.
+
+At first glance, the restaurant choices in Table~\ref{tab:m_vs_t_vs_a} show only subtle differences across preferences, with sequences often featuring R1, R2, R4, or R5 from Wednesday to Friday. However, these small changes lead to significant shifts in time and money costs, highlighting how the \textit{sequence} of choices critically influences outcomes due to factors like daily deals and enjoyment dynamics.
+
+Comparing ``Money First" and ``Time First" reveals clear trade-offs. The ``Money First" plan prioritizes savings, such as the 50\% discount at R1 on Thursday, resulting in the lowest money cost (\$45.04) but higher travel time (65.2 min). In contrast, ``Time First" sacrifices these savings for minimal travel, opting for a closer Subway (R2) on Thursday instead of R1---boosting the money cost to \$57.3 while cutting time to 52.1 min.
+
+The ``Arbitrary" profile, with its balanced daily weights, yields costs (\$51.42 and 54.6 min) that fall neatly between the extremes, aligning with expectations for a mixed-preference scenario. Across all plans, nutrition profiles vary but remain unconstrained, sometimes falling short of ideal weekly targets (e.g., low carbs in "Money First").
+
+
+
+
+
+
+\subsection{The Cost of a Healthey Diet}
+
+We then compare the results of not applying nutrition validation to one with nutrition validation, using the same preference matrix generated from \texttt{seed = 1}
+
+\subsubsection{The Unhealthy Optimal}
+
+The optimal solution for $\bd{W}$ generated from \texttt{seed = 1} without nutrition validation was already found in \textbf{Profile 3} from the last subsection.
+
+
+
+\subsubsection{The Healthy Optimal}
+
+An optimal solution for $\bd{W}$ generated from \texttt{seed = 1}, with the additional nutrition validation, was found below. We notice that the optimizer had rejected 5 plans due to unsatisfactory nutrition content before a validated optimal plan was found.
+
+\input{result:rand_with_NU}
+
+\subsubsection{Comparison on the Effect of Nutrition Validation}
+
+We summarize the weekly optimal plan with and without nutrition considerations into Table \ref{tab:n_vs_no_n}:
+\input{table:N_vs_noN}
+
+% \colorbox{yellow}{It} can be seen intuitively, after adding the nutrition constraint the time cost increase significantly, the money cost have a small increment. The main reason of changing the choice of the restaurant is due to the extra 10g fat in the primal optimal solution. But what's more behind this different solution is the process of finding the "With Nutrition Constraint" optimal solution. 
+
+% We can see from the Julia code we built for this model that each "no good cut" without exception is lead by the excessive fat. In this case we need to think about whether it is cost by the unreasonable bound set of fat, or this is a common problem in our daily life. 
+
+% Here, I am more inclined to the latter. If we want to had a diet with diverse flavors, we will not be able to be restricted in the Dining hall on campus which serves salad hand fruits a lot, and subway, which are very convenient can healthy sandwiches. We will want some food with 
+% richer spices and different styles of cooking, which might lead to a potential dietary health issues, so I think we should keep our nutrition bound tight, or else it will have lacks a purpose for existence,after all, this is a gradual process that takes time.
+
+The \textit{"cost of nutrients"}—the price paid in time and money to satisfy dietary goals—is clearly quantified by our results in Table~\ref{tab:n_vs_no_n}. Enforcing these constraints is not free; it increases the total time cost by over 20 minutes (from 54.6 to 75.0) and adds nearly \$5 to the weekly budget. The primary driver for this shift in restaurant choices is the need to satisfy the fat constraint; the unconstrained optimal solution contains 150g of fat, exceeding the upper bound of 140g by 10g.
+
+Further analysis of the iterative solution process (as shown in the raw output above) reveals that every "no-good" cut was triggered by a violation of the fat upper bound. This consistent violation prompts a reflection: is the fat upper bound overly restrictive, or does this reflect a common dietary challenge in daily life?
+
+We contend that this observation points to the latter scenario. Achieving a diet with diverse flavors, especially one incorporating richer spices and varied cooking styles beyond campus dining staples like salads and Subway sandwiches, often presents a challenge in meeting strict nutritional targets. Such preferences can indeed lead to potential dietary imbalances, particularly concerning fat intake. Therefore, maintaining tight nutrition bounds is crucial for the model to serve its purpose of guiding healthier choices, acknowledging that achieving this balance is often a gradual process in real-world dietary habits.
+
+\subsection{The Emergence of an Optimal Plan}
+An optimal plan for a single week is useful, but what constitutes a good dining strategy over time? To answer this, we moved beyond single-shot optimization to uncover recurring patterns in restaurant selection. We exploit our simulation to generate 1000 unique, randomized preference profiles, and for each one, we solved for the optimal weekly dining plan.
+
+This process was conducted under two scenarios: one without nutritional constraints and one with them. By aggregating the optimal choices from all 1000 runs for each scenario, we can visualize the most frequently selected restaurants. The resulting patterns are displayed in the heatmap in Figure \ref{fig:heatmap}.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width= \linewidth]{fig:heatmap.png}
+    \caption{Heat Map of Weekly Restaurant Choices, with and without nutrition constraints. No one visits Mem Union :(  }
+    \label{fig:heatmap}
+\end{figure}
+
+We observe a clear emergence of consistent optimal restaurant choices across the week. 
+Without the nutrition constraint, Restaurant R4 (Subway) is predominantly chosen on Days 1 and 2, while Restaurant R1 is the primary choice for Days 3, 4, and 5, with some optimal plans also including R2 and R5. The introduction of the nutrition constraint maintains these dominant daily preferences for R4 and R1. However, it significantly alters the secondary choices, leading to a marked decrease in the selection of R2 and a noticeable increase in the frequency of R5 across Days 3, 4, and 5. This indicates that the nutrition constraint compels the optimization to diversify choices, favoring other restaurants to meet dietary requirements even if they are not the top preference based solely on other criteria. We also notice that not one instance among our 1000 simulations chose to visit Memorial Union (R6).
+
+\subsection{A Discussion on Assumptions}
+After exploring the emergence of an optimal plan, it is important to discuss the assumptions and simplifications in the modeling process that shape the simulation output and the specific results we see above.
+
+\begin{itemize}
+    \item \textbf{Simplified Restaurant Offerings:} We assume each restaurant serves only one fixed food option with predefined prices and nutritional content. In reality, restaurants offer diverse menus, allowing for varied choices within a single establishment. This simplification might lead to a less flexible optimal plan than a student could achieve in practice, potentially overestimating the "cost" of adhering to certain constraints if a healthier or cheaper option exists at a preferred restaurant.
+
+    \item \textbf{Deterministic Environment:} Transit times between locations are assumed to be fixed and known. Similarly, prices, deals, and enjoyment values are static parameters. This deterministic view does not account for real-world variability such as traffic delays, unexpected restaurant closures, fluctuating prices, or individual variations in mood and preference. The model thus provides an "ideal" plan under perfect conditions, which may require adjustments in a dynamic environment.
+
+    \item \textbf{Quantified and Linear Enjoyment:} A bold attempt was made to quantify \textit{happiness.} The abstract concept of "happiness" is measured with a linear "Enjoyment Index" ($E_d$), which evolves based on fixed values assigned to each restaurant. The "speed buff" ($\phi_d$) is then a piecewise linear function of this index. This linear accumulation and effect might oversimplify the complex, non-linear nature of human emotions and their impact on physical agility. It assumes a direct, predictable relationship that may not hold true for all individuals or situations.
+
+    \item \textbf{Weekly Nutrition Aggregation:} Nutritional targets are set as aggregate bounds for the entire week. The model does not enforce daily nutritional requirements or consider meal-to-meal balance. This means that while the weekly totals may be met, the daily distribution of nutrients could be highly imbalanced, potentially leading to sub-optimal daily dietary habits despite meeting the overall weekly goals.
+
+
+    
+\end{itemize}
+
+
+
+
+
+\section{Conclusion and Future Directions}
+
+\subsection{Conclusion}
+This project developed and implemented a mixed-integer linear programming model to optimize the daily lunch decisions for a university student. By integrating real-world complexities such as dynamic discounts, state-dependent travel times via an "Enjoyment Index," and nutritional requirements, our framework provides a powerful tool for exploring the trade-offs inherent in everyday planning.
+
+Our analysis yielded several key insights:
+
+First, we demonstrated that even subtle changes in the sequence of restaurant choices can lead to significant differences in weekly time and money costs, highlighting the value of a holistic, week-long optimization approach. 
+
+Second, by comparing preference profiles, we quantified the trade-offs between prioritizing time and money, showing how the model logically sacrifices deals for speed, and vice-versa. 
+
+Third, and most significantly, we calculated the tangible "cost of a healthy diet," revealing that enforcing nutritional constraints increased weekly travel time by over 20 minutes and costs by nearly \$5 in our case study, primarily driven by the need to limit fat intake. One can further ask the question of whether it is a necessary sacrifice to have a healthier diet on campus.
+
+Finally, through simulation, we identified robust daily dining patterns, showing that while certain restaurants (R1 and R4) are consistently optimal choices, nutritional constraints play a crucial role in diversifying the selection of secondary options.
+
+\subsection{Future Directions}
+The framework developed in this project can be extended in several compelling directions to enhance its realism and utility. Future work could involve scaling the model to include a more comprehensive set of restaurant choices and diversified menus, introducing a new layer of meal-specific decision-making. Incorporating dynamic route optimization for commutes and introducing dining times corresponding to restaurant types and the impact of restaurant traffic on ordering and dining times can provide more accurate time costs. From a behavioral perspective, adding constraints for meal variety and repetition aversion would better reflect real-world preferences. Furthermore, the model could be enhanced by integrating preference learning to automatically adapt to a user's dining history, or by employing stochastic optimization to account for uncertainties like unpredictable restaurant deals or travel times, thereby generating more robust and personalized weekly plans.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+% \phantomsection
+% \addcontentsline{toc}{section}{References}
+% \bibliographystyle{plain}
+% \bibliography{references}
+
+\newpage
+\phantomsection
+\addcontentsline{toc}{section}{Appendix}
+\section*{Appendix}
+\label{appendix}
+\subsection*{Code 1: No Nutrition Check}
+\label{sec:code_1}
+\input{code:no_nut}
+
+\newpage
+\subsection*{Code 2:\textit{ With} Nutrition Check}
+\label{sec:code_2}
+\input{code:with_nut}
+
+
+
+
+
+
+
+\end{document}

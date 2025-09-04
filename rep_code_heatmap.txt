@@ -1,0 +1,157 @@
+using JuMP, Gurobi, Random
+import MathOptInterface
+const MOI = MathOptInterface
+
+const DAYS        = 5
+const RESTAURANTS = 6
+const NTRIALS     = 1000                     # ← run 1000 seeds
+
+
+# Matrix to count how often restaurant r is chosen on day d
+choice_cnt = zeros(Int, DAYS, RESTAURANTS)
+
+
+function solve_once!(seed::Int, choice_cnt::Matrix{Int})
+    
+    # 1. ----------------------------- DATA  -------------------------------- #
+    Random.seed!(seed)                      # << only line that changes per run
+
+    time = [13 13 26 14 26 19;
+            13 13 23 13 23 19;
+             6 13 34 27 23 34;
+            13 15 30 21 25 27;
+             9 16 29 19 23 23]
+
+    price = [11.59, 15.00, 19.50, 10.00, 13.25, 17.25]
+
+    baseW   = rand(DAYS)                    # fresh random weights
+    weights = hcat(round.(baseW; digits=2), round.(1 .- baseW; digits=2))
+
+    nutrition   = [ 975 102 41 35;
+                   1025 128 32 40;
+                    890 100 26 30;
+                    665  90 45 20;
+                    775 100 25 25;
+                    800 110 34 28 ]
+    nutr_lower  = [3000, 484, 130, 20]
+    nutr_upper  = [5250, 900, 300, 140]
+
+    enjoy_val   = [-1, 0, 2, 1, -1, 0]
+    R_plus      = [r for r in 1:RESTAURANTS if enjoy_val[r] == 1]
+
+    # 2. -------------------------- BUILD MODEL ----------------------------- #
+    m = Model(Gurobi.Optimizer)
+    set_silent(m)
+
+    @variable(m, x[1:DAYS, 1:RESTAURANTS], Bin)
+    @constraint(m, [d=1:DAYS], sum(x[d,r] for r in 1:RESTAURANTS) == 1)
+    @constraint(m, [r=1:RESTAURANTS], sum(x[d,r] for d in 1:DAYS) <= 2)
+
+    # enjoyment inventory
+    @variable(m, 0 <= E[1:DAYS] <= 6)
+    @constraint(m, E[1] == 1)
+    for d in 1:DAYS-1
+        @constraint(m, E[d+1] == E[d] + sum(enjoy_val[r] * x[d,r] for r in 1:RESTAURANTS))
+    end
+
+    @variable(m, lowEnjoy[1:DAYS], Bin)
+    bigM = 10
+    @constraint(m, [d=1:DAYS], E[d] - 1   <=  bigM*(1 - lowEnjoy[d]))
+    @constraint(m, [d=1:DAYS], E[d] - 0.1 >= -bigM*lowEnjoy[d])
+    @constraint(m, [d=1:DAYS], sum(x[d,r] for r in R_plus) >= lowEnjoy[d])
+
+    # SOS‑2 speed factor φ[d]
+    knot_E      = 0.0:6.0
+    #knot_factor = [1.0, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5] # low enjoyment effect
+    knot_factor = [1.0, 1.0, 0.85, 0.7, 0.45, 0.3, 0.15] # robust enjoyment effect
+    @variable(m, 0 <= λ[1:DAYS, 1:length(knot_E)] <= 1)
+    @variable(m, φ[1:DAYS] >= 0)
+    for d in 1:DAYS
+        @constraint(m, sum(λ[d,:]) == 1)
+        @constraint(m, E[d] == sum(knot_E[k]      * λ[d,k] for k in 1:length(knot_E)))
+        @constraint(m, φ[d] == sum(knot_factor[k] * λ[d,k] for k in 1:length(knot_E)))
+        @constraint(m, λ[d,:] in SOS2())
+    end
+
+    # dynamic prices + visit deals (verbatim)
+    price_base = fill(0.0, DAYS, RESTAURANTS)
+    for d in 1:DAYS, r in 1:RESTAURANTS
+        f = 1.0
+        f = (r == 1 && d == 4)  ? 0.50 : f
+        f = (r == 3 && isodd(d)) ? 0.80 : f
+        f = (r == 4 && iseven(d)) ? 0.88 : f
+        price_base[d,r] = price[r] * f
+    end
+    @variable(m, z2[2:DAYS], Bin)
+    @variable(m, y5[1:DAYS], Bin)
+    @variable(m, y6[1:DAYS], Bin)
+    for d in 2:DAYS
+        @constraint(m, z2[d] <= x[d,2])
+        @constraint(m, z2[d] <= x[d-1,2])
+        @constraint(m, z2[d] >= x[d,2] + x[d-1,2] - 1)
+    end
+    @constraint(m, sum(y5) <= 1)
+    for d in 1:DAYS
+        @constraint(m, y5[d] <= x[d,5])
+        if d > 1
+            @constraint(m, y5[d] + sum(x[k,5] for k=1:d-1) <= 1)
+        end
+    end
+    @constraint(m, sum(y6) <= 1)
+    for d in 1:DAYS
+        @constraint(m, y6[d] <= x[d,6])
+        @constraint(m, y6[d] <= sum(x[k,6] for k=1:d-1))
+        if d > 1
+            @constraint(m, y6[d] >= x[d,6] + sum(x[k,6] for k=1:d-1) - 1)
+        else
+            @constraint(m, y6[d] == 0)
+        end
+    end
+
+    @expression(m, expr_time,
+        sum(weights[d,1] * φ[d] * time[d,r] * x[d,r] for d=1:DAYS, r=1:RESTAURANTS))
+    @expression(m, expr_money_base,
+        sum(weights[d,2] * price_base[d,r] * x[d,r] for d=1:DAYS, r=1:RESTAURANTS))
+    @expression(m, expr_money_deals,
+        sum(weights[d,2] * 0.20 * price[2] * z2[d] for d=2:DAYS) +
+        sum(weights[d,2] * 0.35 * price[5] * y5[d] for d=1:DAYS) +
+        sum(weights[d,2] * 0.16 * price[6] * y6[d] for d=1:DAYS))
+    @objective(m, Min, expr_time + expr_money_base - expr_money_deals)
+
+    # 3. -------------------- YOUR CUT LOOP (unchanged) --------------------- #
+    cut_cnt  = 0
+    tot_nutr = zeros(4)
+
+    while cut_cnt < 30
+        optimize!(m)
+        termination_status(m) == MOI.OPTIMAL || return   # skip infeasible
+
+        chosen = [(d,r) for d in 1:DAYS, r in 1:RESTAURANTS if value(x[d,r]) > 0.5]
+        tot_nutr = sum(nutrition[r,:] for (_ ,r) in chosen)
+
+        viol_low  = max.(0.0, nutr_lower .- tot_nutr)
+        viol_high = max.(0.0, tot_nutr .- nutr_upper)
+        violated  = any(viol_low .> 1e-6) || any(viol_high .> 1e-6)
+
+        if violated
+            cut_cnt += 1
+            @constraint(m, sum(x[d,r] for (d,r) in chosen) <= DAYS - 1)
+        else
+            break
+        end
+    end
+
+    # 4. --------------- record restaurant choices for this seed ----------- #
+    for d in 1:DAYS
+        r = findfirst(r -> value(x[d,r]) > 0.5, 1:RESTAURANTS)
+        choice_cnt[d, r] += 1
+    end
+end
+
+--------------- MAIN LOOP ---------------
+for seed in 1:NTRIALS
+    solve_once!(seed, choice_cnt)
+end
+
+println("Counts over $NTRIALS runs (rows = days, cols = R1…R6):")
+println(choice_cnt)
